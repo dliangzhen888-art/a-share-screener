@@ -1,0 +1,14 @@
+[Unit]
+Description=A Share Screener FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+# 安装时将 <PROJECT_DIR> 替换为项目的实际绝对路径。
+WorkingDirectory=<PROJECT_DIR>
+ExecStart=<PROJECT_DIR>/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
