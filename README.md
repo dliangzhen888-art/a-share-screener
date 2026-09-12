@@ -1,6 +1,6 @@
 # A 股短线筛选器
 
-极简、低资源占用的 FastAPI 基础工程，用于先验证 GitHub → Ubuntu → FastAPI 部署链路。第一阶段仅提供状态页、健康检查和 SQLite 初始化，**不包含行情、指标或选股策略**。
+极简、低资源占用的 FastAPI 基础工程。Phase 2 仅加入腾讯单股/少量股票实时行情验证，**不包含全市场扫描、行情历史、指标或选股策略**。
 
 ## 项目结构
 
@@ -32,6 +32,12 @@ python3 -m venv .venv
 ```
 
 访问 `http://服务器地址:8000/`，或使用 `curl http://127.0.0.1:8000/health` 检查服务。应用启动时会自动创建 `data/screener.db` 及 `metadata` 表。
+
+## 腾讯实时行情
+
+首页可输入沪深六位代码查询。单股接口为 `GET /api/quote/{code}`；`GET /api/debug/tencent-benchmarks` 会依次验证 `600519`、`000001`、`002130`、`002897`。后端使用 Python 标准库 `urllib` 访问 `https://qt.gtimg.cn/q=`，不增加 HTTP 客户端依赖，并将 GB18030 响应转换为 Unicode。
+
+腾讯 Web 行情接口不是正式开发者 API，字段布局未来可能变化。因此项目对价格、换手率、量比、市值关系等字段执行 sanity check，并使用 fail-closed 保护：网络错误、字段缺失、解析失败或数值异常时均返回 `status: "unavailable"`，不会用 `0` 冒充未知值。
 
 ## 安装 systemd 服务
 
