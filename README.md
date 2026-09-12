@@ -39,6 +39,12 @@ python3 -m venv .venv
 
 腾讯 Web 行情接口不是正式开发者 API，字段布局未来可能变化。因此项目对价格、换手率、量比、市值关系等字段执行 sanity check，并使用 fail-closed 保护：网络错误、字段缺失、解析失败或数值异常时均返回 `status: "unavailable"`，不会用 `0` 冒充未知值。
 
+## 完整前置筛选
+
+`GET /api/screen` 执行顺序、低并发的两阶段筛选。Stage 1 仅批量读取实时行情，检查沪深主板范围、名称、上市天数、市值、成交额、涨幅、换手率与量比；Stage 2 只为 Stage 1 通过者请求 40 根腾讯前复权日 K，计算 20 日平均成交额、5 日涨幅、MA5/10/20、MA20 三日上移和 Wilder RSI14。结果按 5 日涨幅、今日成交额依次降序排列。指标仅使用 Python 列表计算，不依赖 pandas 或 numpy。
+
+股票池及上市日期通过独立的 `app.market.universe` provider 获取，历史 K 由独立的 `app.market.history` provider 获取，便于上游接口变化时替换。腾讯日 K 若缺少可靠成交额字段，会 fail-closed 并转用独立备用日 K provider；任何缺失或异常的关键字段都不会通过筛选。
+
 ## 安装 systemd 服务
 
 将示例中的 `<PROJECT_DIR>` 替换为项目的实际绝对路径后安装。路径可按服务器环境配置，示例没有写死用户或目录：

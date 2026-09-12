@@ -43,3 +43,10 @@ button { color: #fff; font-weight: 700; background: #2563eb; cursor: pointer; }
 .quote { margin-top: .5rem; }
 .quote h2 { margin: 0 0 1rem; }
 [hidden] { display: none; }
+.scan-button { width: 100%; margin-top: 1rem; }
+.scan-button:disabled { opacity: .55; cursor: wait; }
+.stats, .candidate dl { margin: 0; }
+.results { display: grid; gap: 1rem; margin-top: 1rem; }
+.candidate { padding: 1rem; border: 1px solid #334155; border-radius: .7rem; background: #111827; }
+.candidate h3 { margin: 0 0 .75rem; }
+.candidate dl div { font-size: .9rem; }

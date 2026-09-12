@@ -1,7 +1,9 @@
 """FastAPI 应用入口。"""
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from datetime import date
+from time import perf_counter
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -10,7 +12,10 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import STATIC_DIR, TEMPLATES_DIR
 from app.db import initialize_database
-from app.market.tencent import SUPPORTED_CODES, fetch_tencent_quote, normalize_code
+from app.market.history import fetch_history
+from app.market.tencent import SUPPORTED_CODES, fetch_tencent_quote, fetch_tencent_quotes, normalize_code
+from app.market.universe import fetch_universe
+from app.strategy.momentum import run_screen
 
 
 @asynccontextmanager
@@ -62,3 +67,16 @@ def quote(code: str) -> dict[str, object]:
 @app.get("/api/debug/tencent-benchmarks")
 def tencent_benchmarks() -> list[dict[str, object]]:
     return [quote(code) for code in SUPPORTED_CODES]
+
+
+@app.get("/api/screen")
+def screen() -> dict[str, object]:
+    started = perf_counter()
+    stocks = fetch_universe()
+    if stocks is None:
+        return {"status": "unavailable", "results": [], "stats": None}
+    quotes, failed_batches = fetch_tencent_quotes([stock.code for stock in stocks])
+    result = run_screen(stocks, quotes, fetch_history, date.today(), failed_batches)
+    result["stats"]["elapsed_seconds"] = perf_counter() - started
+    result["status"] = "ok"
+    return result

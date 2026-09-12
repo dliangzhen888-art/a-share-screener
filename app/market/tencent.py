@@ -164,3 +164,27 @@ def fetch_tencent_quote(code: str, timeout: float = 5.0) -> TencentQuote | None:
             return parse_tencent_quote(response.read(), expected_code=symbol[2:])
     except (HTTPError, URLError, OSError, TimeoutError):
         return None
+
+
+def fetch_tencent_quotes(codes: list[str], batch_size: int = 50, timeout: float = 8.0) -> tuple[dict[str, TencentQuote], int]:
+    """低并发顺序批量获取实时行情，并统计失败批次。"""
+    quotes: dict[str, TencentQuote] = {}
+    failed_batches = 0
+    symbols = [symbol for code in codes if (symbol := normalize_code(code)) is not None]
+    for offset in range(0, len(symbols), batch_size):
+        batch = symbols[offset : offset + batch_size]
+        request = Request(f"{TENCENT_QUOTE_URL}{','.join(batch)}", headers={"User-Agent": "a-share-screener/3.0"})
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                text = response.read().decode("gb18030")
+            parsed = 0
+            for statement in text.splitlines():
+                quote = parse_tencent_quote(statement)
+                if quote is not None and normalize_code(quote.code) in batch:
+                    quotes[quote.code] = quote
+                    parsed += 1
+            if parsed == 0:
+                failed_batches += 1
+        except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError):
+            failed_batches += 1
+    return quotes, failed_batches
